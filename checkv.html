@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Check+ · Checklist de Veículos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   CSS 1 – VARIÁVEIS E RESET
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#f0f3f8;--surface:#ffffff;--surface2:#e8ecf4;--border:#d0d8ea;
+  --text:#0f1b2d;--text-muted:#6b7a99;--accent:#1a3c6e;--accent2:#2455a0;
+  --accent3:#e8b400;--ok:#22c55e;--ok-bg:#e6f9f0;--ok-text:#14532d;
+  --nok:#ef4444;--nok-bg:#fff0f0;--nok-text:#7f1d1d;
+  --na-bg:#f5f5f5;--na-border:#a0a0a0;--na-text:#404040;
+  --shadow:0 4px 24px rgba(26,60,110,.10);--shadow-sm:0 2px 8px rgba(26,60,110,.07);
+  --radius:14px;--radius-sm:8px;--tr:.22s ease;
+  --header-bg:#1a3c6e;--header-bg2:#1a6e3c;
+}
+[data-theme="dark"]{
+  --bg:#141820;--surface:#1e2330;--surface2:#252c3d;--border:#2e384f;
+  --text:#e8edf8;--text-muted:#8899bb;--accent:#4b7fe0;--accent2:#6b99f5;
+  --ok-bg:#0e2e1a;--ok-text:#86efac;--nok-bg:#2e0e0e;--nok-text:#fca5a5;
+  --na-bg:#1e2330;--na-border:#6b7a99;--na-text:#aab2cc;
+  --shadow:0 4px 24px rgba(0,0,0,.40);--shadow-sm:0 2px 8px rgba(0,0,0,.30);
+  --header-bg:#0d1f3c;--header-bg2:#0d3c1f;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background var(--tr),color var(--tr);}
+
+/* SCREENS */
+.screen{display:none;} .screen.active{display:block;}
+
+/* SPINNER */
+#global-spinner{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;font-weight:600;font-size:.95rem;backdrop-filter:blur(4px);}
+.spinner-ring{width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2330;color:#fff;padding:11px 22px;border-radius:50px;font-size:.88rem;font-weight:600;z-index:8888;white-space:nowrap;max-width:90vw;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.35);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast-success{background:#166534;}.toast-error{background:#991b1b;}.toast-info{background:#1e3a5f;}
+
+/* LIGHTBOX */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:7777;align-items:center;justify-content:center;padding:16px;cursor:zoom-out;}
+#lightbox.open{display:flex;}
+#lightbox img{max-width:100%;max-height:90vh;border-radius:10px;animation:slideUp .2s ease;cursor:default;}
+#lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+#lightbox-close:hover{background:rgba(255,255,255,.35);}
+
+/* MODAL */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:6666;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
+#modal-overlay.open{display:flex;}
+#modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 16px 56px rgba(0,0,0,.3);padding:24px 22px 20px;max-width:480px;width:100%;border:1px solid var(--border);animation:slideUp .25s ease;max-height:90vh;overflow-y:auto;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.modal-header h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;}
+.modal-close-x{background:none;border:none;font-size:1rem;cursor:pointer;color:var(--text-muted);padding:4px;border-radius:4px;transition:color var(--tr);}
+.modal-close-x:hover{color:var(--nok);}
+.modal-summary{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid var(--border);font-size:.85rem;line-height:1.7;}
+.modal-summary p{margin-bottom:3px;}
+.modal-footer{display:flex;gap:10px;margin-top:16px;}
+.modal-footer .btn{margin-bottom:0;}
+.hist-item-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:.82rem;}
+.modal-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.modal-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);}
+
+/* AUTH */
+.auth-wrapper{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(145deg,#0d1f3c 0%,#1a3c6e 60%,#2455a0 100%);}
+.auth-brand{display:flex;align-items:center;gap:14px;margin-bottom:28px;color:#fff;}
+.auth-logo{width:54px;height:54px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#fff;font-family:'Syne',sans-serif;}
+.brand-name{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;}
+.brand-name span{color:#e8b400;}
+.brand-sub{font-size:.8rem;color:rgba(255,255,255,.65);margin-top:2px;letter-spacing:.5px;text-transform:uppercase;}
+.auth-card{background:var(--surface);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.4);width:100%;max-width:400px;padding:24px 22px;border:1px solid var(--border);}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border-radius:50px;padding:4px;margin-bottom:22px;border:1px solid var(--border);}
+.auth-tab{padding:9px;border:none;background:transparent;border-radius:50px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;color:var(--text-muted);transition:background var(--tr),color var(--tr);}
+.auth-tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(26,60,110,.28);}
+.auth-panel{display:none;} .auth-panel.active{display:block;}
+.field-hint{font-size:.75rem;color:var(--text-muted);margin-top:4px;display:block;}
+
+/* HEADER */
+.app-header{background:var(--header-bg);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:500;box-shadow:0 2px 16px rgba(0,0,0,.25);transition:background .3s ease;}
+.app-header.op-chegada{background:var(--header-bg2);}
+.header-brand{display:flex;align-items:center;gap:10px;}
+.header-logo{width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;font-family:'Syne',sans-serif;flex-shrink:0;}
+.header-title{display:block;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:-.3px;line-height:1;}
+.header-sub{display:block;font-size:.68rem;opacity:.7;margin-top:2px;letter-spacing:.4px;text-transform:uppercase;}
+.header-actions{display:flex;align-items:center;gap:8px;}
+.header-actions button{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:50px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff;transition:background var(--tr);}
+.header-actions button:hover{background:rgba(255,255,255,.28);}
+.op-user-badge{font-size:.75rem;font-weight:600;background:rgba(255,255,255,.15);border-radius:50px;padding:4px 10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* CARDS / FORM */
+.admin-main,.op-main{max-width:540px;margin:0 auto;padding:18px 14px 60px;}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;border:1px solid var(--border);transition:background var(--tr),border-color var(--tr);animation:fadeIn .3s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.card-title{font-family:'Syne',sans-serif;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent);margin-bottom:14px;}
+.form-group{margin-bottom:13px;}
+.field-label{display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input[type="text"],input[type="number"],input[type="email"],input[type="password"],input[type="datetime-local"],select,#admin-historico-filtro{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color var(--tr),background var(--tr);-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--accent);background:var(--surface);}
+input[readonly]{opacity:.7;cursor:default;}
+input.error,select.error{border-color:var(--nok)!important;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s,background .18s;letter-spacing:.15px;}
+.btn:active{transform:scale(.97);}
+.btn-full{width:100%;margin-bottom:10px;}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(26,60,110,.25);}
+.btn-primary:hover{background:var(--accent2);}
+.btn-accent{background:var(--accent3);color:#0f1b2d;}
+.btn-accent:hover{filter:brightness(1.08);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1.5px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:1.1rem;padding:4px;border-radius:6px;transition:transform .15s;color:var(--text-muted);}
+.btn-icon:hover{transform:scale(1.15);}
+.btn-danger-icon{color:var(--nok);}
+
+/* BADGES / SCORE */
+.badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.badge-ok{background:var(--ok-bg);color:var(--ok-text);}
+.badge-nok{background:var(--nok-bg);color:var(--nok-text);}
+.badge-neutral{background:var(--surface2);color:var(--text-muted);}
+.badge-saida{background:var(--surface2);color:var(--accent);border:1px solid var(--border);}
+.badge-chegada{background:var(--ok-bg);color:var(--ok-text);}
+.score-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:50px;font-size:.75rem;font-weight:700;}
+.score-ok{background:#dcfce7;color:#166534;}.score-med{background:#fef9c3;color:#854d0e;}.score-bad{background:#fee2e2;color:#991b1b;}
+[data-theme="dark"] .score-ok{background:#0e2e1a;color:#86efac;}
+[data-theme="dark"] .score-med{background:#2e2000;color:#fbbf24;}
+[data-theme="dark"] .score-bad{background:#2e0e0e;color:#fca5a5;}
+
+/* STATUS */
+.status-badge{display:inline-block;padding:5px 14px;border-radius:50px;font-size:.82rem;font-weight:700;letter-spacing:.3px;}
+.status-ativo{background:#dcfce7;color:#166534;}.status-teste{background:#fef9c3;color:#854d0e;}.status-expirado{background:#fee2e2;color:#991b1b;}
+[data-theme="dark"] .status-ativo{background:#0e2e1a;color:#86efac;}
+[data-theme="dark"] .status-teste{background:#2e2000;color:#fbbf24;}
+[data-theme="dark"] .status-expirado{background:#2e0e0e;color:#fca5a5;}
+.empresa-nome{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;margin-bottom:4px;}
+.muted-text{color:var(--text-muted);font-size:.85rem;}
+.error-text{color:var(--nok);}
+
+/* PLANOS */
+.planos-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:420px){.planos-grid{grid-template-columns:repeat(3,1fr);}}
+.plano-card{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:16px 14px;text-align:center;position:relative;transition:border-color var(--tr),box-shadow var(--tr);}
+.plano-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);}
+.plano-destaque{border-color:var(--accent3);box-shadow:0 0 0 2px var(--accent3);}
+.plano-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent3);color:#0f1b2d;font-size:.65rem;font-weight:800;padding:2px 10px;border-radius:50px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.plano-nome{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.plano-preco{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;line-height:1;margin-bottom:2px;}
+.plano-cent{font-size:1rem;}
+.plano-desc{font-size:.72rem;color:var(--text-muted);margin-bottom:12px;}
+.plano-card .btn{margin-bottom:0;}
+.codigo-display{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.codigo-valor{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;letter-spacing:6px;color:var(--accent);background:var(--surface2);padding:8px 18px;border-radius:var(--radius-sm);border:2px dashed var(--border);}
+.op-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;}
+.op-row:last-child{border-bottom:none;}
+.op-row-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.op-nome{font-weight:600;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.op-email{font-size:.78rem;}
+
+/* CHECKLIST / RADIOS */
+.op-toggle-wrap{margin-bottom:16px;}
+.op-toggle{display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border-radius:50px;padding:4px;border:1.5px solid var(--border);}
+.op-toggle input[type="radio"]{display:none;}
+.op-toggle label{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border-radius:50px;font-size:.88rem;font-weight:700;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s;color:var(--text-muted);user-select:none;}
+.op-toggle input[value="saida"]:checked+label{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(26,60,110,.3);}
+.op-toggle input[value="chegada"]:checked+label{background:#22c55e;color:#fff;box-shadow:0 3px 10px rgba(34,197,94,.3);}
+.check-item{display:flex;flex-direction:column;gap:6px;padding:11px 0;border-bottom:1px solid var(--border);}
+.check-item:last-child{border-bottom:none;}
+.check-item-header{display:flex;align-items:center;gap:7px;font-size:.9rem;font-weight:500;}
+.item-icon{font-size:1.05rem;}
+.radio-group{display:flex;gap:6px;flex-wrap:wrap;}
+.radio-group input[type="radio"]{display:none;}
+.radio-group label{padding:5px 13px;border-radius:50px;font-size:.8rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text-muted);transition:all .17s ease;user-select:none;}
+.radio-group label:hover{border-color:var(--accent);color:var(--text);}
+.radio-group input[value="ok"]:checked+label{background:var(--ok-bg);border-color:var(--ok);color:var(--ok-text);}
+.radio-group input[value="nao_ok"]:checked+label{background:var(--nok-bg);border-color:var(--nok);color:var(--nok-text);}
+.radio-group input[value="na"]:checked+label,.radio-group input[value="nao_possui"]:checked+label{background:var(--na-bg);border-color:var(--na-border);color:var(--na-text);}
+.check-item.error .radio-group label{border-color:var(--nok);}
+.section-divider{display:flex;align-items:center;gap:10px;margin:6px 0 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:700;}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.validation-alert{display:none;background:var(--nok-bg);border:1.5px solid var(--nok);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:14px;font-size:.85rem;color:var(--nok-text);font-weight:500;}
+.validation-alert.show{display:block;}
+
+/* FOTOS */
+.photo-capture-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.btn-photo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:14px 10px;border-radius:var(--radius-sm);border:2px dashed var(--border);background:var(--surface2);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:border-color var(--tr),color var(--tr);}
+.btn-photo:hover{border-color:var(--accent);color:var(--accent);}
+.btn-photo-icon{font-size:1.4rem;}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.photo-thumb{position:relative;aspect-ratio:1;border-radius:var(--radius-sm);overflow:hidden;border:1.5px solid var(--border);background:var(--surface2);animation:fadeIn .25s ease;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;transition:transform .2s;}
+.photo-thumb img:hover{transform:scale(1.04);}
+.photo-remove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:.8rem;line-height:22px;text-align:center;cursor:pointer;border:none;font-weight:700;transition:background .15s;}
+.photo-remove:hover{background:var(--nok);}
+.photo-count{font-size:.75rem;text-align:center;margin-top:8px;}
+
+/* HISTÓRICO CARDS */
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:border-color var(--tr),box-shadow var(--tr);}
+.hist-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);}
+.hist-card-inner{display:flex;gap:10px;align-items:flex-start;}
+.hist-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.hist-thumb-placeholder{width:48px;height:48px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.hist-card-body{flex:1;min-width:0;}
+.hist-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
+.hist-title{font-weight:700;font-size:.88rem;}
+.hist-date{font-size:.72rem;}
+.hist-card-meta{font-size:.78rem;color:var(--text-muted);margin-bottom:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.hist-card-badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+
+/* TELA BLOQUEADA */
+.blocked-wrapper{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center;gap:16px;}
+.blocked-icon{font-size:4rem;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.blocked-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;}
+.blocked-msg{color:var(--text-muted);font-size:.95rem;line-height:1.6;max-width:320px;}
+
+/* PRINT */
+.print-title,.print-header{display:none;} .item-print-value{display:none;}
+@media print{
+  header,.auth-wrapper,#screen-admin,#screen-auth,#screen-blocked,.photo-capture-row,.photo-remove,.form-actions,#op-historico-lista,.validation-alert,#card-fotos .card-title,#modal-overlay,#global-spinner,.toast,#lightbox{display:none!important;}
+  body,.card,.check-item,main{background:#fff!important;color:#000!important;box-shadow:none!important;border:none!important;}
+  .print-header{display:flex!important;justify-content:space-between;padding-bottom:10px;border-bottom:2px solid #000;margin-bottom:16px;}
+  .print-title{display:block!important;font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:#0f1b2d!important;}
+  .op-main{padding:0;max-width:100%;}
+  .photo-grid{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;}
+  .photo-thumb{border:1px solid #ccc!important;}
+  .item-print-value{display:inline!important;font-weight:700;}
+  .radio-group{display:none!important;}
+}
+
+/* RESPONSIVE */
+@media(max-width:360px){.radio-group label{padding:4px 9px;font-size:.76rem;}.btn{padding:10px 14px;font-size:.86rem;}.plano-preco{font-size:1.3rem;}}
+
+/* SETUP / DEVICE-LINK SCREENS */
+.setup-step{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.setup-step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.setup-row{display:flex;align-items:flex-start;gap:10px;}
+.setup-row-body{flex:1;}
+.pat-hint{font-size:.73rem;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+.pat-hint a{color:var(--accent);}
+.device-code-box{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:5px;color:var(--accent);background:var(--surface2);padding:12px 18px;border-radius:var(--radius-sm);border:2px dashed var(--border);text-align:center;margin:10px 0;word-break:break-all;}
+.info-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:.83rem;line-height:1.6;color:var(--text-muted);}
+.info-box strong{color:var(--text);}
+.divider-text{text-align:center;color:var(--text-muted);font-size:.8rem;margin:12px 0;position:relative;}
+.divider-text::before,.divider-text::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border);}
+.divider-text::before{left:0;}.divider-text::after{right:0;}
+/* Admin nav tabs */
+.admin-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto;}
+.admin-tab{padding:10px 16px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color var(--tr),border-color var(--tr);}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.admin-panel{display:none;}.admin-panel.active{display:block;}
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════
+     BACKEND: GITHUB API + GIST COMO BANCO DE DADOS
+     ───────────────────────────────────────────────────────────
+     Sem Firebase. Sem servidores. Apenas GitHub.
+
+     Como funciona:
+       1. Admin cria um Personal Access Token (PAT) no GitHub
+          com escopo "gist" (leitura + escrita de Gists)
+       2. App cria um Gist secreto com todos os dados (JSON)
+       3. Operadores recebem um "Código de Dispositivo" do admin
+          para vincular seu celular ao Gist da empresa
+       4. Senhas protegidas com SHA-256 (SubtleCrypto nativa)
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 1 – CONSTANTES E ESTADO GLOBAL
+══════════════════════════════════════════════════════════════ */
+const LS = {
+  PAT:      'checkv_pat',
+  GIST_ID:  'checkv_gist_id',
+  SESSION:  'checkv_session',
+  THEME:    'checkv_theme',
+};
+
+const GITHUB_API = 'https://api.github.com';
+const GIST_FILE  = 'checkv_data.json';  // nome do arquivo dentro do Gist
+
+// Estado global da aplicação
+let G = {
+  pat:      null,   // GitHub Personal Access Token
+  gistId:   null,   // ID do Gist da empresa
+  data:     null,   // objeto JSON completo { empresa, operadores, checklists }
+  session:  null,   // { id, email, nome, role } do usuário logado
+};
+let fotosBase64 = [];
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 2 – UTILITÁRIOS DE UI
+══════════════════════════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+function setLoading(show) {
+  document.getElementById('global-spinner').style.display = show ? 'flex' : 'none';
+}
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast toast-${type} show`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3400);
+}
+function fmtDate(iso) {
+  if (!iso) return '–';
+  try { return new Date(iso).toLocaleString('pt-BR'); } catch { return iso; }
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function gerarCodigo(n = 6) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 3 – HASH DE SENHA (SubtleCrypto – nativa no browser)
+══════════════════════════════════════════════════════════════ */
+async function hashSenha(senha) {
+  const buf  = new TextEncoder().encode(senha);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 4 – GITHUB GIST API
+   Todas as operações de dados passam por aqui.
+══════════════════════════════════════════════════════════════ */
+
+/** Faz uma requisição autenticada à API do GitHub */
+async function ghFetch(path, opts = {}) {
+  const res = await fetch(GITHUB_API + path, {
+    ...opts,
+    headers: {
+      'Authorization': `Bearer ${G.pat}`,
+      'Accept':        'application/vnd.github+json',
+      'Content-Type':  'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `GitHub API ${res.status}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+/** Carrega os dados do Gist e retorna o objeto JSON */
+async function loadData() {
+  const gist = await ghFetch(`/gists/${G.gistId}`);
+  const raw  = gist.files[GIST_FILE]?.content;
+  if (!raw) throw new Error('Arquivo de dados não encontrado no Gist.');
+  G.data = JSON.parse(raw);
+  return G.data;
+}
+
+/** Persiste G.data de volta no Gist (sobrescreve o arquivo JSON) */
+async function saveData() {
+  await ghFetch(`/gists/${G.gistId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      files: {
+        [GIST_FILE]: { content: JSON.stringify(G.data, null, 2) },
+      },
+    }),
+  });
+}
+
+/** Cria um novo Gist secreto com a estrutura inicial de dados */
+async function criarGist(empresa) {
+  const inicial = {
+    empresa: {
+      nome:               empresa.nome,
+      adminId:            empresa.adminId,
+      statusAssinatura:   'teste',
+      criadoEm:           new Date().toISOString(),
+      codigoConvite:      gerarCodigo(6),
+      codigoDispositivo:  null,  // gerado sob demanda pelo admin
+      plano:              null,
+      dataExpiracao:      null,
+    },
+    operadores:  [],
+    checklists:  [],
+  };
+  const gist = await ghFetch('/gists', {
+    method: 'POST',
+    body: JSON.stringify({
+      description: `Check+ · ${empresa.nome} · dados internos`,
+      public:      false,
+      files:       { [GIST_FILE]: { content: JSON.stringify(inicial, null, 2) } },
+    }),
+  });
+  G.data   = inicial;
+  G.gistId = gist.id;
+  localStorage.setItem(LS.GIST_ID, gist.id);
+  return gist.id;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 5 – STATUS DE ASSINATURA
+══════════════════════════════════════════════════════════════ */
+function calcStatus(empresa) {
+  if (!empresa) return 'expirado';
+  if (empresa.statusAssinatura === 'ativo') return 'ativo';
+  const criado  = new Date(empresa.criadoEm);
+  const diff    = (Date.now() - criado) / 86400000;
+  return diff <= 7 ? 'teste' : 'expirado';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 6 – TEMA ESCURO
+══════════════════════════════════════════════════════════════ */
+function initTheme() {
+  const saved = localStorage.getItem(LS.THEME) || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  // Múltiplos botões de tema nas telas
+  document.querySelectorAll('.btn-theme-toggle').forEach(b =>
+    b.textContent = saved === 'dark' ? '☀️' : '🌙');
+}
+document.addEventListener('click', e => {
+  if (!e.target.classList.contains('btn-theme-toggle')) return;
+  const cur  = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(LS.THEME, next);
+  document.querySelectorAll('.btn-theme-toggle').forEach(b =>
+    b.textContent = next === 'dark' ? '☀️' : '🌙');
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 7 – INICIALIZAÇÃO: decide qual tela mostrar
+══════════════════════════════════════════════════════════════ */
+async function init() {
+  initTheme();
+
+  G.pat    = localStorage.getItem(LS.PAT);
+  G.gistId = localStorage.getItem(LS.GIST_ID);
+  const sessionRaw = localStorage.getItem(LS.SESSION);
+  G.session = sessionRaw ? JSON.parse(sessionRaw) : null;
+
+  // Se não tem PAT configurado → tela de setup
+  if (!G.pat || !G.gistId) {
+    showScreen('screen-setup');
+    return;
+  }
+
+  // Se tem sessão salva → verifica e redireciona
+  if (G.session) {
+    setLoading(true);
+    try {
+      await loadData();
+      await rotear();
+    } catch (e) {
+      toast('Erro ao carregar dados: ' + e.message, 'error');
+      showScreen('screen-auth');
+    }
+    setLoading(false);
+  } else {
+    showScreen('screen-auth');
+  }
+}
+
+/** Redireciona para a tela correta baseado na sessão e status */
+async function rotear() {
+  const status = calcStatus(G.data.empresa);
+  if (G.session.role === 'admin') {
+    await renderAdmin(status);
+    showScreen('screen-admin');
+  } else {
+    if (status === 'expirado') {
+      showScreen('screen-blocked');
+    } else {
+      renderOperador();
+      showScreen('screen-operator');
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 8 – TELA DE SETUP (primeira configuração)
+══════════════════════════════════════════════════════════════ */
+
+/** Tab: Criar empresa */
+document.getElementById('form-setup-admin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome    = document.getElementById('setup-nome').value.trim();
+  const empresa = document.getElementById('setup-empresa').value.trim();
+  const email   = document.getElementById('setup-email').value.trim();
+  const senha   = document.getElementById('setup-senha').value;
+  const pat     = document.getElementById('setup-pat').value.trim();
+
+  if (!nome || !empresa || !email || !senha || !pat) {
+    toast('Preencha todos os campos.', 'error'); return;
+  }
+  setLoading(true);
+  try {
+    G.pat = pat;
+    // Valida PAT fazendo uma requisição simples
+    await ghFetch('/user');
+
+    const id   = uid();
+    const hash = await hashSenha(senha);
+
+    // Cria o Gist
+    await criarGist({ nome: empresa, adminId: id });
+
+    // Adiciona admin nos dados
+    G.data.empresa.adminEmail = email;
+    G.data.operadores.push({ id, nome, email, hash, role: 'admin', criadoEm: new Date().toISOString() });
+    await saveData();
+
+    localStorage.setItem(LS.PAT, pat);
+    G.session = { id, nome, email, role: 'admin' };
+    localStorage.setItem(LS.SESSION, JSON.stringify(G.session));
+
+    toast('Empresa criada!', 'success');
+    await renderAdmin(calcStatus(G.data.empresa));
+    showScreen('screen-admin');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+  setLoading(false);
+});
+
+/** Tab: Vincular dispositivo (operador ou admin em outro dispositivo) */
+document.getElementById('form-setup-device').addEventListener('submit', async e => {
+  e.preventDefault();
+  const codigo = document.getElementById('setup-device-code').value.trim().toUpperCase();
+  if (!codigo || codigo.length < 10) {
+    toast('Código inválido.', 'error'); return;
+  }
+  setLoading(true);
+  try {
+    // Código de dispositivo = base64( gistId + ":" + pat )
+    let decoded;
+    try { decoded = atob(codigo); } catch { throw new Error('Código mal formatado.'); }
+    const [gistId, ...patParts] = decoded.split(':');
+    const pat = patParts.join(':'); // PAT pode conter ':'
+    if (!gistId || !pat) throw new Error('Código incompleto.');
+
+    G.pat    = pat;
+    G.gistId = gistId;
+    localStorage.setItem(LS.PAT,     pat);
+    localStorage.setItem(LS.GIST_ID, gistId);
+
+    await loadData();
+    toast('Dispositivo vinculado! Faça login.', 'success');
+    showScreen('screen-auth');
+  } catch (err) {
+    toast('Erro ao vincular: ' + err.message, 'error');
+  }
+  setLoading(false);
+});
+
+// Tabs de setup
+document.querySelectorAll('.setup-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.setup-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.target).classList.add('active');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 9 – LOGIN / LOGOUT
+══════════════════════════════════════════════════════════════ */
+
+// Tabs login / cadastro
+document.querySelectorAll('.auth-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.target).classList.add('active');
+  });
+});
+
+// Exibe campo de código se operador
+document.getElementById('reg-role').addEventListener('change', function() {
+  document.getElementById('wrap-codigo-empresa').style.display =
+    this.value === 'operador' ? 'block' : 'none';
+});
+
+/** LOGIN */
+document.getElementById('form-login').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const senha = document.getElementById('login-senha').value;
+  setLoading(true);
+  try {
+    await loadData();
+    const hash = await hashSenha(senha);
+    const user = G.data.operadores.find(u => u.email.toLowerCase() === email && u.hash === hash);
+    if (!user) throw new Error('E-mail ou senha incorretos.');
+    G.session = { id: user.id, nome: user.nome, email: user.email, role: user.role };
+    localStorage.setItem(LS.SESSION, JSON.stringify(G.session));
+    await rotear();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  setLoading(false);
+});
+
+/** CADASTRO de operador */
+document.getElementById('form-cadastro').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome   = document.getElementById('reg-nome').value.trim();
+  const email  = document.getElementById('reg-email').value.trim().toLowerCase();
+  const senha  = document.getElementById('reg-senha').value;
+  const role   = document.getElementById('reg-role').value;
+  const codigo = document.getElementById('reg-codigo').value.trim().toUpperCase();
+
+  if (!nome || !email || !senha || !role) { toast('Preencha todos os campos.', 'error'); return; }
+  if (role === 'operador' && !codigo) { toast('Informe o Código da Empresa.', 'error'); return; }
+
+  setLoading(true);
+  try {
+    await loadData();
+
+    if (role === 'operador') {
+      if (G.data.empresa.codigoConvite !== codigo) throw new Error('Código da empresa inválido.');
+    } else {
+      throw new Error('Para criar uma empresa, use a tela de Configuração.');
+    }
+
+    if (G.data.operadores.find(u => u.email.toLowerCase() === email)) {
+      throw new Error('Este e-mail já está cadastrado.');
+    }
+
+    const hash = await hashSenha(senha);
+    const novo = { id: uid(), nome, email, hash, role, criadoEm: new Date().toISOString() };
+    G.data.operadores.push(novo);
+    await saveData();
+
+    G.session = { id: novo.id, nome, email, role };
+    localStorage.setItem(LS.SESSION, JSON.stringify(G.session));
+    toast('Conta criada!', 'success');
+    await rotear();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  setLoading(false);
+});
+
+/** LOGOUT – limpa sessão mas mantém PAT/Gist configurados */
+function logout() {
+  G.session = null;
+  localStorage.removeItem(LS.SESSION);
+  // Limpa formulário
+  resetarFormulario(false);
+  showScreen('screen-auth');
+}
+document.querySelectorAll('.btn-logout').forEach(b => b.addEventListener('click', logout));
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 10 – PAINEL DO ADMIN
+══════════════════════════════════════════════════════════════ */
+async function renderAdmin(status) {
+  document.getElementById('admin-nome-empresa').textContent = G.data.empresa.nome || '–';
+  document.getElementById('admin-nome-user').textContent    = G.session.nome;
+
+  const badge = document.getElementById('admin-status-badge');
+  badge.textContent = status === 'ativo'   ? '✅ Ativo'
+                    : status === 'teste'   ? '🔬 Período de Teste'
+                    : '❌ Expirado';
+  badge.className = `status-badge status-${status}`;
+
+  // Info expiração
+  let info = '';
+  if (status === 'teste') {
+    const criado  = new Date(G.data.empresa.criadoEm);
+    const exp     = new Date(criado.getTime() + 7 * 86400000);
+    const restam  = Math.max(0, Math.ceil((exp - Date.now()) / 86400000));
+    info = `Teste gratuito – ${restam} dia${restam !== 1 ? 's' : ''} restante${restam !== 1 ? 's' : ''}`;
+  } else if (status === 'ativo' && G.data.empresa.dataExpiracao) {
+    info = 'Válido até ' + fmtDate(G.data.empresa.dataExpiracao);
+  } else if (status === 'expirado') {
+    info = 'Assinatura expirada. Escolha um plano abaixo.';
+  }
+  document.getElementById('admin-status-info').textContent = info;
+  document.getElementById('admin-planos').style.display = status === 'expirado' ? 'block' : 'none';
+  document.getElementById('admin-codigo-convite').textContent = G.data.empresa.codigoConvite || '–';
+
+  renderAdminOperadores();
+  renderAdminHistorico();
+}
+
+// ── Admin tabs ──
+document.querySelectorAll('.admin-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.target).classList.add('active');
+  });
+});
+
+// ── Gerar novo código de convite ──
+document.getElementById('btn-gerar-codigo').addEventListener('click', async () => {
+  const novo = gerarCodigo(6);
+  setLoading(true);
+  try {
+    G.data.empresa.codigoConvite = novo;
+    await saveData();
+    document.getElementById('admin-codigo-convite').textContent = novo;
+    toast('Novo código: ' + novo, 'success');
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  setLoading(false);
+});
+
+// ── Gerar / copiar Código de Dispositivo ──
+document.getElementById('btn-gerar-device-code').addEventListener('click', async () => {
+  setLoading(true);
+  try {
+    await loadData(); // recarrega para garantir PAT atualizado
+    // Código = base64( gistId + ":" + pat )
+    const raw  = G.gistId + ':' + G.pat;
+    const code = btoa(raw);
+    const box = document.getElementById('admin-device-code');
+    box.textContent = code;
+    box.style.display = 'block';
+    document.getElementById('device-code-hint').style.display = 'block';
+    // Copia para clipboard
+    await navigator.clipboard.writeText(code).catch(() => {});
+    toast('Código copiado! Cole no dispositivo do operador.', 'success');
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  setLoading(false);
+});
+
+// ── Operadores ──
+function renderAdminOperadores() {
+  const lista = document.getElementById('admin-operadores-lista');
+  const ops   = (G.data.operadores || []).filter(u => u.role === 'operador');
+  if (!ops.length) {
+    lista.innerHTML = '<p class="muted-text">Nenhum operador vinculado.</p>';
+    return;
+  }
+  lista.innerHTML = '';
+  ops.forEach(op => {
+    const row = document.createElement('div');
+    row.className = 'op-row';
+    row.innerHTML = `
+      <div class="op-row-info">
+        <span class="op-nome">👤 ${op.nome}</span>
+        <span class="op-email muted-text">${op.email}</span>
+      </div>
+      <button class="btn-icon btn-danger-icon" data-id="${op.id}" title="Remover">🗑️</button>
+    `;
+    row.querySelector('[data-id]').addEventListener('click', () => removerOperador(op.id, op.nome));
+    lista.appendChild(row);
+  });
+}
+
+async function removerOperador(id, nome) {
+  if (!confirm(`Remover operador "${nome}"?`)) return;
+  setLoading(true);
+  try {
+    G.data.operadores = G.data.operadores.filter(u => u.id !== id);
+    await saveData();
+    toast(`${nome} removido.`, 'success');
+    renderAdminOperadores();
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  setLoading(false);
+}
+
+// ── Planos ──
+document.querySelectorAll('.btn-plano').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const plano = btn.dataset.plano;
+    const meses = plano === 'mensal' ? 1 : plano === 'anual' ? 12 : 1200;
+    const exp   = new Date(); exp.setMonth(exp.getMonth() + meses);
+    setLoading(true);
+    try {
+      G.data.empresa.statusAssinatura = 'ativo';
+      G.data.empresa.plano            = plano;
+      G.data.empresa.dataExpiracao    = exp.toISOString();
+      await saveData();
+      toast('✅ Plano ativado: ' + plano, 'success');
+      await renderAdmin('ativo');
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+    setLoading(false);
+  });
+});
+
+// ── Histórico admin ──
+function renderAdminHistorico(filtro = '') {
+  const container = document.getElementById('admin-historico-lista');
+  let checklists  = [...(G.data.checklists || [])].reverse(); // mais recentes primeiro
+  if (filtro) {
+    const t = filtro.toLowerCase();
+    checklists = checklists.filter(r =>
+      (r.modelo||'').toLowerCase().includes(t) ||
+      (r.placa||'').toLowerCase().includes(t) ||
+      (r.operadorNome||'').toLowerCase().includes(t) ||
+      (r.local||'').toLowerCase().includes(t)
+    );
+  }
+  if (!checklists.length) {
+    container.innerHTML = '<p class="muted-text">Nenhum checklist encontrado.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  checklists.forEach(r => container.appendChild(criarCardHistorico(r)));
+}
+document.getElementById('admin-historico-filtro').addEventListener('input', function() {
+  renderAdminHistorico(this.value);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 11 – TELA DO OPERADOR
+══════════════════════════════════════════════════════════════ */
+function renderOperador() {
+  document.getElementById('op-nome-user').textContent = G.session.nome || '';
+  preencherDataHora();
+  fotosBase64 = [];
+  renderizarFotos();
+  resetarFormulario(false);
+  renderOpHistorico();
+}
+
+function renderOpHistorico() {
+  const container = document.getElementById('op-historico-lista');
+  const meus = [...(G.data.checklists || [])]
+    .filter(r => r.uid === G.session.id)
+    .reverse();
+  if (!meus.length) {
+    container.innerHTML = '<p class="muted-text">Sem checklists ainda.</p>'; return;
+  }
+  container.innerHTML = '';
+  meus.forEach(r => container.appendChild(criarCardHistorico(r)));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 12 – CHECKLIST: DEFINIÇÕES E RENDERIZAÇÃO
+══════════════════════════════════════════════════════════════ */
+const CHECKLIST_CARRO = [
+  { id:'pneus_d',    icon:'🛞', label:'Pneus dianteiros',             opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'pneus_t',    icon:'🛞', label:'Pneus traseiros',              opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'estepe',     icon:'🔄', label:'Estepe',                       opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'},{v:'nao_possui',l:'Não possui'}] },
+  { id:'oleo',       icon:'🛢️', label:'Nível do óleo',               opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'freios',     icon:'🦺', label:'Freios (pedal firme)',          opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'buzina',     icon:'📢', label:'Buzina',                       opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'luzes',      icon:'💡', label:'Luzes (faróis, setas, freio)', opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'cintos',     icon:'🛡️', label:'Cintos de segurança',         opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'triangulo',  icon:'⚠️', label:'Triângulo e macaco',          opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'agua',       icon:'💧', label:'Água do radiador',             opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'limpadores', icon:'🌧️', label:'Limpadores de para-brisa',    opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+];
+const CHECKLIST_MOTO = [
+  { id:'pneus',        icon:'🛞', label:'Pneus (dianteiro/traseiro)', opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'corrente',     icon:'⚙️', label:'Corrente / Cardã',           opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'freios',       icon:'🦺', label:'Freios',                      opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'buzina',       icon:'📢', label:'Buzina',                      opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'luzes',        icon:'💡', label:'Farol, setas, lanterna',      opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'capacete',     icon:'⛑️', label:'Capacete (viseira, casco)',  opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'epi',          icon:'🧥', label:'Jaqueta / Luvas',             opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'retrovisores', icon:'🔎', label:'Retrovisores',                opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'}] },
+  { id:'oleo',         icon:'🛢️', label:'Nível do óleo',              opts:[{v:'ok',l:'OK'},{v:'nao_ok',l:'Não OK'},{v:'na',l:'N/A'}] },
+];
+
+function getOperacao() {
+  return document.querySelector('input[name="operacao"]:checked')?.value || 'saida';
+}
+function atualizarOperacao() {
+  const op = getOperacao(); const saida = op === 'saida';
+  document.getElementById('op-header')?.classList.toggle('op-chegada', !saida);
+  document.getElementById('op-header-subtitle').textContent = saida ? 'Checklist de Saída' : 'Checklist de Chegada';
+  const lL = document.getElementById('label-local');
+  const lK = document.getElementById('label-km');
+  if (lL) lL.textContent = saida ? '📍 Local de Saída *'  : '📍 Local de Chegada *';
+  if (lK) lK.textContent = saida ? '📏 KM Inicial *'      : '📏 KM Final *';
+  atualizarTituloChecklist();
+}
+document.querySelectorAll('input[name="operacao"]').forEach(r =>
+  r.addEventListener('change', atualizarOperacao));
+
+function atualizarTituloChecklist() {
+  const tipo = document.getElementById('campo-tipo')?.value;
+  const el   = document.getElementById('checklist-title');
+  if (!el || !tipo) return;
+  const lbl = getOperacao() === 'saida' ? 'Saída' : 'Chegada';
+  el.textContent = tipo === 'carro' ? `🚗 Carro – ${lbl}` : `🏍️ Moto – ${lbl}`;
+}
+
+document.getElementById('campo-tipo')?.addEventListener('change', function() {
+  const tipo = this.value;
+  const sec  = document.getElementById('checklist-section');
+  const act  = document.getElementById('form-actions');
+  const fot  = document.getElementById('card-fotos');
+  if (!tipo) { sec.style.display = act.style.display = fot.style.display = 'none'; return; }
+  const lista = tipo === 'carro' ? CHECKLIST_CARRO : CHECKLIST_MOTO;
+  const items = document.getElementById('checklist-items');
+  items.innerHTML = '';
+  lista.forEach(item => items.appendChild(criarItemChecklist(item)));
+  items.querySelectorAll('input[type="radio"]').forEach(inp =>
+    inp.addEventListener('change', atualizarValoresPrint));
+  sec.style.display = act.style.display = fot.style.display = 'block';
+  atualizarTituloChecklist();
+  document.getElementById('campo-modelo').placeholder =
+    tipo === 'carro' ? 'Ex: Honda Civic EXL 2022' : 'Ex: Honda CB 500 2021';
+});
+
+function criarItemChecklist(item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'check-item'; wrap.dataset.id = item.id;
+  wrap.innerHTML = `<div class="check-item-header"><span class="item-icon">${item.icon}</span><span>${item.label}</span></div>`;
+  const group = document.createElement('div'); group.className = 'radio-group';
+  item.opts.forEach(opt => {
+    const inp = document.createElement('input');
+    inp.type = 'radio'; inp.name = `check_${item.id}`; inp.id = `chk_${item.id}_${opt.v}`; inp.value = opt.v;
+    const lbl = document.createElement('label');
+    lbl.htmlFor = inp.id; lbl.textContent = opt.l;
+    group.appendChild(inp); group.appendChild(lbl);
+  });
+  const pv = document.createElement('span');
+  pv.className = 'item-print-value'; pv.id = `print_${item.id}`;
+  wrap.appendChild(group); wrap.appendChild(pv);
+  return wrap;
+}
+
+function atualizarValoresPrint() {
+  const tipo  = document.getElementById('campo-tipo')?.value;
+  const lista = tipo === 'carro' ? CHECKLIST_CARRO : CHECKLIST_MOTO;
+  lista.forEach(item => {
+    const sel = document.querySelector(`input[name="check_${item.id}"]:checked`);
+    const el  = document.getElementById(`print_${item.id}`);
+    if (el) el.textContent = sel ? (item.opts.find(o => o.v === sel.value)?.l || '') : '–';
+  });
+}
+
+function preencherDataHora() {
+  const el = document.getElementById('campo-data'); if (!el) return;
+  const now = new Date(); const off = now.getTimezoneOffset() * 60000;
+  el.value = new Date(now - off).toISOString().slice(0, 16);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 13 – FOTOS
+══════════════════════════════════════════════════════════════ */
+const MAX_FOTOS = 8; const FOTO_DIM = 1024; const FOTO_Q = 0.72;
+
+function comprimirImagem(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width: w, height: h } = img;
+        if (w > FOTO_DIM || h > FOTO_DIM) {
+          if (w >= h) { h = Math.round(h * FOTO_DIM / w); w = FOTO_DIM; }
+          else { w = Math.round(w * FOTO_DIM / h); h = FOTO_DIM; }
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(c.toDataURL('image/jpeg', FOTO_Q));
+      };
+      img.onerror = rej; img.src = e.target.result;
+    };
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+
+function renderizarFotos() {
+  const grid = document.getElementById('photo-grid');
+  const cnt  = document.getElementById('photo-count');
+  if (!grid) return;
+  grid.innerHTML = '';
+  fotosBase64.forEach((src, i) => {
+    const t = document.createElement('div'); t.className = 'photo-thumb';
+    const img = document.createElement('img'); img.src = src;
+    img.addEventListener('click', () => abrirLightbox(src));
+    const btn = document.createElement('button'); btn.className = 'photo-remove'; btn.textContent = '×';
+    btn.addEventListener('click', ev => { ev.stopPropagation(); fotosBase64.splice(i, 1); renderizarFotos(); });
+    t.appendChild(img); t.appendChild(btn); grid.appendChild(t);
+  });
+  cnt.textContent = fotosBase64.length === 0 ? 'Nenhuma foto (opcional)'
+    : `${fotosBase64.length} foto${fotosBase64.length > 1 ? 's' : ''} · toque para ampliar`;
+}
+
+async function processarArquivos(files) {
+  const disp = MAX_FOTOS - fotosBase64.length;
+  if (disp <= 0) { toast(`Limite de ${MAX_FOTOS} fotos.`, 'error'); return; }
+  document.getElementById('photo-count').textContent = '⏳ Processando…';
+  for (const f of Array.from(files).slice(0, disp)) {
+    try { fotosBase64.push(await comprimirImagem(f)); } catch {}
+  }
+  renderizarFotos();
+}
+
+document.getElementById('btn-tirar-foto')?.addEventListener('click', () => { const e = document.getElementById('input-camera'); e.value = ''; e.click(); });
+document.getElementById('btn-galeria')?.addEventListener('click', () => { const e = document.getElementById('input-galeria'); e.value = ''; e.click(); });
+document.getElementById('input-camera')?.addEventListener('change', e => { if (e.target.files.length) processarArquivos(e.target.files); });
+document.getElementById('input-galeria')?.addEventListener('change', e => { if (e.target.files.length) processarArquivos(e.target.files); });
+
+function abrirLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightbox')?.addEventListener('click', e => {
+  if (e.target.id === 'lightbox') document.getElementById('lightbox').classList.remove('open');
+});
+document.getElementById('lightbox-close')?.addEventListener('click', () =>
+  document.getElementById('lightbox').classList.remove('open'));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('lightbox')?.classList.remove('open');
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 14 – SALVAR CHECKLIST
+══════════════════════════════════════════════════════════════ */
+function validarFormulario() {
+  let ok = true;
+  document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+  [
+    { id: 'campo-tipo',   v: document.getElementById('campo-tipo')?.value },
+    { id: 'campo-local',  v: document.getElementById('campo-local')?.value.trim() },
+    { id: 'campo-placa',  v: document.getElementById('campo-placa')?.value.trim() },
+    { id: 'campo-km',     v: document.getElementById('campo-km')?.value.trim() },
+    { id: 'campo-modelo', v: document.getElementById('campo-modelo')?.value.trim() },
+  ].forEach(({ id, v }) => { if (!v) { document.getElementById(id)?.classList.add('error'); ok = false; } });
+  document.querySelectorAll('#checklist-items .check-item').forEach(item => {
+    if (!document.querySelector(`input[name="check_${item.dataset.id}"]:checked`)) {
+      item.classList.add('error'); ok = false;
+    }
+  });
+  const al = document.getElementById('validation-alert');
+  al.classList.toggle('show', !ok);
+  if (!ok) al.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return ok;
+}
+
+function coletarDados() {
+  const tipo  = document.getElementById('campo-tipo').value;
+  const lista = tipo === 'carro' ? CHECKLIST_CARRO : CHECKLIST_MOTO;
+  const checklist = {};
+  lista.forEach(item => {
+    const sel = document.querySelector(`input[name="check_${item.id}"]:checked`);
+    checklist[item.id] = {
+      label: item.label, icon: item.icon,
+      value: sel?.value || null,
+      valueLabel: sel ? (item.opts.find(o => o.v === sel.value)?.l || sel.value) : null,
+    };
+  });
+  const vals  = Object.values(checklist);
+  const nokC  = vals.filter(i => i.value === 'nao_ok').length;
+  const score = Math.round(((vals.length - nokC) / vals.length) * 100);
+  return {
+    id:           uid(),
+    uid:          G.session.id,
+    operadorNome: G.session.nome,
+    operacao:     getOperacao(),
+    tipo,
+    local:        document.getElementById('campo-local').value.trim(),
+    placa:        document.getElementById('campo-placa').value.trim().toUpperCase(),
+    km:           document.getElementById('campo-km').value.trim(),
+    modelo:       document.getElementById('campo-modelo').value.trim(),
+    data:         document.getElementById('campo-data').value,
+    checklist,
+    score,
+    fotos:        [...fotosBase64],
+    criadoEm:     new Date().toISOString(),
+  };
+}
+
+document.getElementById('btn-save')?.addEventListener('click', async () => {
+  if (!validarFormulario()) return;
+  setLoading(true);
+  atualizarValoresPrint();
+  try {
+    // Recarrega dados frescos para evitar conflito de versão
+    await loadData();
+    const dados = coletarDados();
+    G.data.checklists.push(dados);
+    await saveData();
+    toast('✅ Checklist salvo no GitHub!', 'success');
+    mostrarModal('✅ Checklist Salvo!', buildSummaryHTML(dados));
+    renderOpHistorico();
+  } catch (e) {
+    toast('Erro ao salvar: ' + e.message, 'error');
+  }
+  setLoading(false);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 15 – MODAL E CARDS DE HISTÓRICO
+══════════════════════════════════════════════════════════════ */
+function mostrarModal(titulo, htmlContent) {
+  document.getElementById('modal-title').textContent = titulo;
+  document.getElementById('modal-summary').innerHTML = htmlContent;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function buildSummaryHTML(reg) {
+  const opLabel  = reg.operacao === 'chegada' ? '🏁 Chegada' : '🚀 Saída';
+  const kmLabel  = reg.operacao === 'chegada' ? 'KM Final'   : 'KM Inicial';
+  const locLabel = reg.operacao === 'chegada' ? 'Chegada'    : 'Saída';
+  const vals     = Object.values(reg.checklist || {});
+  const okC      = vals.filter(v => v.value === 'ok').length;
+  const nokC     = vals.filter(v => v.value === 'nao_ok').length;
+  const score    = reg.score ?? Math.round(((vals.length - nokC) / vals.length) * 100);
+  const scoreCls = score >= 80 ? 'ok' : score >= 50 ? 'med' : 'bad';
+  const fotosHtml = reg.fotos?.length
+    ? `<div class="modal-photo-grid">${reg.fotos.map(f =>
+        `<img src="${f}" alt="" onclick="abrirLightbox('${f}')">`).join('')}</div>` : '';
+  return `
+    <p><strong>Operação:</strong> ${opLabel}${reg.operadorNome ? ' · ' + reg.operadorNome : ''}</p>
+    <p><strong>Tipo:</strong> ${reg.tipo === 'carro' ? '🚗 Carro' : '🏍️ Moto'} – ${reg.modelo}</p>
+    <p><strong>Placa:</strong> ${reg.placa} &nbsp;|&nbsp; <strong>${kmLabel}:</strong> ${Number(reg.km || 0).toLocaleString('pt-BR')}</p>
+    <p><strong>Local de ${locLabel}:</strong> ${reg.local}</p>
+    <p><strong>Data:</strong> ${fmtDate(reg.data || reg.criadoEm)}</p>
+    <p style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <span class="score-pill score-${scoreCls}">Score ${score}%</span>
+      <span class="badge badge-ok">✅ ${okC} OK</span>
+      ${nokC > 0 ? `<span class="badge badge-nok">❌ ${nokC} Não OK</span>` : ''}
+      ${reg.fotos?.length ? `<span class="badge badge-neutral">📷 ${reg.fotos.length}</span>` : ''}
+    </p>
+    ${fotosHtml}
+  `;
+}
+
+function criarCardHistorico(reg) {
+  const vals   = Object.values(reg.checklist || {});
+  const nokC   = vals.filter(v => v.value === 'nao_ok').length;
+  const okC    = vals.filter(v => v.value === 'ok').length;
+  const score  = reg.score ?? Math.round(((vals.length - nokC) / vals.length) * 100);
+  const card   = document.createElement('div'); card.className = 'hist-card';
+  const thumb  = reg.fotos?.length
+    ? `<img class="hist-thumb" src="${reg.fotos[0]}" alt="">`
+    : `<div class="hist-thumb-placeholder">${reg.tipo === 'carro' ? '🚗' : '🏍️'}</div>`;
+  const opBadge = reg.operacao === 'chegada'
+    ? `<span class="badge badge-chegada">🏁 Chegada</span>`
+    : `<span class="badge badge-saida">🚀 Saída</span>`;
+  card.innerHTML = `
+    <div class="hist-card-inner">
+      ${thumb}
+      <div class="hist-card-body">
+        <div class="hist-card-top">
+          <span class="hist-title">${reg.tipo === 'carro' ? '🚗' : '🏍️'} ${reg.modelo || '–'} · ${reg.placa || '–'}</span>
+          <span class="hist-date muted-text">${fmtDate(reg.data || reg.criadoEm)}</span>
+        </div>
+        <div class="hist-card-meta">
+          ${opBadge}
+          ${reg.operadorNome ? `<span class="muted-text">👤 ${reg.operadorNome}</span>` : ''}
+          📍 ${reg.local || '–'}
+        </div>
+        <div class="hist-card-badges">
+          <span class="score-pill score-${score >= 80 ? 'ok' : score >= 50 ? 'med' : 'bad'}">Score ${score}%</span>
+          <span class="badge badge-ok">✅ ${okC}</span>
+          ${nokC > 0 ? `<span class="badge badge-nok">❌ ${nokC}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  card.addEventListener('click', () => {
+    let itens = '<br><strong>Itens:</strong>';
+    vals.forEach(({ icon, label, valueLabel }) => {
+      const cor = valueLabel === 'OK' ? 'badge-ok' : valueLabel === 'Não OK' ? 'badge-nok' : '';
+      itens += `<div class="hist-item-row"><span>${icon || ''} ${label}</span><span class="badge ${cor}">${valueLabel || '–'}</span></div>`;
+    });
+    mostrarModal('📂 Detalhes', buildSummaryHTML(reg) + itens);
+  });
+  return card;
+}
+
+// Modal eventos
+document.getElementById('modal-overlay')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-overlay') document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('btn-modal-ok')?.addEventListener('click', () =>
+  document.getElementById('modal-overlay').classList.remove('open'));
+document.getElementById('btn-modal-new')?.addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+  resetarFormulario(true);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 16 – RESET E EXPORTAR PDF
+══════════════════════════════════════════════════════════════ */
+function resetarFormulario(scroll = true) {
+  ['campo-tipo','campo-local','campo-placa','campo-km','campo-modelo'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const rad = document.getElementById('op-saida'); if (rad) { rad.checked = true; atualizarOperacao(); }
+  ['checklist-section','form-actions','card-fotos'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('checklist-items').innerHTML = '';
+  fotosBase64 = []; renderizarFotos();
+  document.getElementById('validation-alert')?.classList.remove('show');
+  document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+  preencherDataHora();
+  if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.getElementById('btn-new')?.addEventListener('click', () => resetarFormulario(true));
+document.getElementById('btn-export')?.addEventListener('click', () => {
+  atualizarValoresPrint(); window.print();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 17 – DESCONFIGURAR DISPOSITIVO
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-reset-device')?.addEventListener('click', () => {
+  if (!confirm('Remover configuração deste dispositivo? Você precisará do Código de Dispositivo para reconectar.')) return;
+  [LS.PAT, LS.GIST_ID, LS.SESSION].forEach(k => localStorage.removeItem(k));
+  G = { pat: null, gistId: null, data: null, session: null };
+  showScreen('screen-setup');
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SEÇÃO 18 – ARRANQUE
+══════════════════════════════════════════════════════════════ */
+init();
+</script>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     OVERLAYS GLOBAIS (spinner, toast, lightbox, modal)
+══════════════════════════════════════════════════════════════ -->
+<div id="global-spinner">
+  <div class="spinner-ring"></div>
+  <span>Carregando…</span>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="lightbox" role="dialog" aria-label="Visualizar foto">
+  <button id="lightbox-close" title="Fechar">✕</button>
+  <img id="lightbox-img" src="" alt="Foto"/>
+</div>
+
+<div id="modal-overlay" role="dialog" aria-modal="true">
+  <div id="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Detalhes</h2>
+      <button class="modal-close-x" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="modal-summary"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="btn-modal-ok">OK</button>
+      <button class="btn btn-secondary" id="btn-modal-new">Novo Checklist</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA 0: SETUP — Primeira configuração / Vincular dispositivo
+     Aparece quando não há PAT/GistID no localStorage.
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen">
+  <div class="auth-wrapper" style="gap:0;">
+
+    <div class="auth-brand">
+      <div class="auth-logo">✚</div>
+      <div>
+        <h1 class="brand-name">Check<span>+</span></h1>
+        <p class="brand-sub">Configuração inicial</p>
+      </div>
+    </div>
+
+    <div class="auth-card">
+
+      <!-- Tabs: Criar empresa  |  Vincular dispositivo -->
+      <div class="auth-tabs">
+        <button class="setup-tab auth-tab active" data-target="setup-panel-criar">🏢 Criar empresa</button>
+        <button class="setup-tab auth-tab" data-target="setup-panel-vincular">📱 Vincular dispositivo</button>
+      </div>
+
+      <!-- ── PAINEL: CRIAR EMPRESA (admin) ── -->
+      <div class="setup-panel auth-panel active" id="setup-panel-criar">
+
+        <div class="info-box" style="margin-bottom:16px;">
+          <strong>Você precisará de:</strong><br/>
+          Um <a href="https://github.com/settings/tokens/new?scopes=gist&description=CheckPlus" target="_blank" rel="noopener" style="color:var(--accent)">GitHub Personal Access Token</a>
+          com escopo <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:.8rem;">gist</code>.
+          Os dados ficam salvos num <strong>Gist secreto</strong> da sua conta.
+        </div>
+
+        <form id="form-setup-admin" autocomplete="off">
+          <div class="form-group">
+            <label class="field-label">Seu nome</label>
+            <input type="text" id="setup-nome" placeholder="Ex: João Silva" required/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Nome da empresa / frota</label>
+            <input type="text" id="setup-empresa" placeholder="Ex: Transportes Rápidos Ltda" required/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">E-mail (login)</label>
+            <input type="email" id="setup-email" placeholder="seu@email.com" required/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Senha</label>
+            <input type="password" id="setup-senha" placeholder="Mínimo 6 caracteres" required minlength="6"/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">GitHub Personal Access Token</label>
+            <input type="password" id="setup-pat"
+                   placeholder="github_pat_XXXXXXXXXX"
+                   autocomplete="off" required/>
+            <span class="pat-hint">
+              Crie em
+              <a href="https://github.com/settings/tokens/new?scopes=gist&description=CheckPlus"
+                 target="_blank" rel="noopener">github.com/settings/tokens</a>
+              → selecione apenas o escopo <strong>gist</strong>.
+              O token fica armazenado <em>apenas neste dispositivo</em>.
+            </span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            🚀 Criar empresa e configurar
+          </button>
+        </form>
+      </div>
+
+      <!-- ── PAINEL: VINCULAR DISPOSITIVO (operador ou admin em outro celular) ── -->
+      <div class="setup-panel auth-panel" id="setup-panel-vincular">
+        <div class="info-box" style="margin-bottom:16px;">
+          Peça ao <strong>administrador</strong> para gerar um
+          <strong>Código de Dispositivo</strong> no painel dele e cole abaixo.
+          Ele conecta este dispositivo ao banco de dados da empresa.
+        </div>
+        <form id="form-setup-device" autocomplete="off">
+          <div class="form-group">
+            <label class="field-label">Código de Dispositivo</label>
+            <textarea id="setup-device-code"
+              placeholder="Cole o código recebido do administrador…"
+              rows="4"
+              style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;resize:vertical;outline:none;"
+              required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            📱 Vincular este dispositivo
+          </button>
+        </form>
+      </div>
+
+    </div><!-- /.auth-card -->
+  </div><!-- /.auth-wrapper -->
+</div><!-- /#screen-setup -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA 1: LOGIN / CADASTRO
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-auth" class="screen">
+  <div class="auth-wrapper">
+
+    <div class="auth-brand">
+      <div class="auth-logo">✚</div>
+      <div>
+        <h1 class="brand-name">Check<span>+</span></h1>
+        <p class="brand-sub">Checklist de Veículos</p>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-target="panel-login">Entrar</button>
+        <button class="auth-tab" data-target="panel-cadastro">Cadastrar</button>
+      </div>
+
+      <!-- Login -->
+      <div class="auth-panel active" id="panel-login">
+        <form id="form-login" autocomplete="on">
+          <div class="form-group">
+            <label class="field-label">E-mail</label>
+            <input type="email" id="login-email" placeholder="seu@email.com" required autocomplete="email"/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Senha</label>
+            <input type="password" id="login-senha" placeholder="••••••••" required autocomplete="current-password"/>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+        </form>
+        <div class="divider-text">ou</div>
+        <button class="btn btn-secondary btn-full" id="btn-reset-device" style="margin-top:0;">
+          ⚙️ Reconfigurar dispositivo
+        </button>
+      </div>
+
+      <!-- Cadastro (operadores via código de convite) -->
+      <div class="auth-panel" id="panel-cadastro">
+        <form id="form-cadastro" autocomplete="off">
+          <div class="form-group">
+            <label class="field-label">Nome completo</label>
+            <input type="text" id="reg-nome" placeholder="Seu nome" required/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">E-mail</label>
+            <input type="email" id="reg-email" placeholder="seu@email.com" required/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Senha</label>
+            <input type="password" id="reg-senha" placeholder="Mínimo 6 caracteres" required minlength="6"/>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Tipo de conta</label>
+            <select id="reg-role" required>
+              <option value="">Selecione…</option>
+              <option value="operador">👤 Operador (motorista / funcionário)</option>
+            </select>
+          </div>
+          <div class="form-group" id="wrap-codigo-empresa" style="display:none;">
+            <label class="field-label">Código da Empresa</label>
+            <input type="text" id="reg-codigo" placeholder="Ex: AB12CD" maxlength="8"
+                   style="text-transform:uppercase;letter-spacing:3px;font-weight:700;"/>
+            <span class="field-hint">Solicite ao administrador da empresa.</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Criar conta</button>
+        </form>
+      </div>
+
+    </div><!-- /.auth-card -->
+  </div><!-- /.auth-wrapper -->
+</div><!-- /#screen-auth -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA 2: PAINEL DO ADMIN
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-admin" class="screen">
+
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="header-logo">✚</div>
+      <div>
+        <span class="header-title">Check+</span>
+        <span class="header-sub">Painel Admin</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-theme-toggle" title="Alternar tema">🌙</button>
+      <button class="btn-icon btn-logout" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- Status da assinatura -->
+    <div class="card">
+      <div class="card-title">🏢 Empresa</div>
+      <h2 id="admin-nome-empresa" class="empresa-nome">–</h2>
+      <p class="muted-text" style="margin-bottom:10px;">
+        Admin: <strong id="admin-nome-user">–</strong>
+      </p>
+      <div id="admin-status-badge" class="status-badge">–</div>
+      <p id="admin-status-info" class="muted-text" style="margin-top:6px;font-size:.85rem;"></p>
+    </div>
+
+    <!-- Tabs do painel admin -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-target="admin-panel-convite">🔑 Acesso</button>
+      <button class="admin-tab" data-target="admin-panel-operadores">👥 Operadores</button>
+      <button class="admin-tab" data-target="admin-panel-historico">📋 Histórico</button>
+      <button class="admin-tab" data-target="admin-panel-planos">💳 Planos</button>
+    </div>
+
+    <!-- TAB: Códigos de acesso -->
+    <div class="admin-panel active" id="admin-panel-convite">
+
+      <!-- Código de Convite (para cadastro de operadores) -->
+      <div class="card">
+        <div class="card-title">🎟️ Código de Convite</div>
+        <p class="muted-text" style="margin-bottom:10px;font-size:.85rem;">
+          Operadores informam este código ao criar a conta neste dispositivo.
+        </p>
+        <div class="codigo-display">
+          <span id="admin-codigo-convite" class="codigo-valor">–</span>
+          <button class="btn btn-secondary" id="btn-gerar-codigo">🔄 Novo</button>
+        </div>
+      </div>
+
+      <!-- Código de Dispositivo (para vincular novos celulares) -->
+      <div class="card">
+        <div class="card-title">📱 Código de Dispositivo</div>
+        <p class="muted-text" style="margin-bottom:10px;font-size:.85rem;">
+          Permite que operadores (ou você em outro celular) vinculem o app sem precisar
+          do GitHub Token. <strong>Não compartilhe publicamente</strong> — dá acesso de leitura/escrita ao banco de dados.
+        </p>
+        <button class="btn btn-primary" id="btn-gerar-device-code" style="margin-bottom:12px;">
+          🔐 Gerar e copiar Código de Dispositivo
+        </button>
+        <div class="device-code-box" id="admin-device-code" style="display:none;word-break:break-all;font-size:.85rem;letter-spacing:1px;">
+          –
+        </div>
+        <p class="muted-text" style="font-size:.75rem;margin-top:6px;" id="device-code-hint" style="display:none;">
+          ✅ Copiado! O operador deve colar na tela "Vincular dispositivo".
+        </p>
+      </div>
+
+    </div><!-- /#admin-panel-convite -->
+
+    <!-- TAB: Operadores -->
+    <div class="admin-panel" id="admin-panel-operadores">
+      <div class="card">
+        <div class="card-title">👥 Operadores Vinculados</div>
+        <div id="admin-operadores-lista">
+          <p class="muted-text">Carregando…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Histórico global -->
+    <div class="admin-panel" id="admin-panel-historico">
+      <div class="card">
+        <div class="card-title">📋 Todos os Checklists</div>
+        <div class="form-group">
+          <input type="text" id="admin-historico-filtro"
+                 placeholder="🔍 Filtrar por placa, modelo, operador, local…"/>
+        </div>
+        <div id="admin-historico-lista">
+          <p class="muted-text">Carregando…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Planos -->
+    <div class="admin-panel" id="admin-panel-planos">
+      <div class="card">
+        <div class="card-title">💳 Planos de Assinatura</div>
+        <div id="admin-planos">
+          <div class="planos-grid">
+
+            <div class="plano-card">
+              <div class="plano-nome">Mensal</div>
+              <div class="plano-preco">R$&nbsp;14<span class="plano-cent">,90</span></div>
+              <div class="plano-desc">por mês</div>
+              <button class="btn btn-primary btn-full btn-plano" data-plano="mensal">Assinar</button>
+            </div>
+
+            <div class="plano-card plano-destaque">
+              <div class="plano-tag">Mais popular</div>
+              <div class="plano-nome">Anual</div>
+              <div class="plano-preco">R$&nbsp;149<span class="plano-cent">,90</span></div>
+              <div class="plano-desc">por ano · economia de 37%</div>
+              <button class="btn btn-accent btn-full btn-plano" data-plano="anual">Assinar</button>
+            </div>
+
+            <div class="plano-card">
+              <div class="plano-nome">Vitalício</div>
+              <div class="plano-preco">R$&nbsp;299<span class="plano-cent">,90</span></div>
+              <div class="plano-desc">pagamento único</div>
+              <button class="btn btn-primary btn-full btn-plano" data-plano="vitalicio">Adquirir</button>
+            </div>
+
+          </div>
+          <p class="muted-text" style="font-size:.75rem;margin-top:12px;text-align:center;">
+            ⚠️ Pagamento simulado — integre com seu gateway de pagamento.
+          </p>
+        </div>
+      </div>
+    </div><!-- /#admin-panel-planos -->
+
+  </main>
+</div><!-- /#screen-admin -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA 3: OPERADOR — CHECKLIST
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-operator" class="screen">
+
+  <header class="app-header" id="op-header">
+    <div class="header-brand">
+      <div class="header-logo">✚</div>
+      <div>
+        <span class="header-title">Check+</span>
+        <span class="header-sub" id="op-header-subtitle">Checklist de Saída</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="op-user-badge" id="op-nome-user"></span>
+      <button class="btn-theme-toggle" title="Alternar tema">🌙</button>
+      <button class="btn-icon btn-logout" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <!-- Bloco visível apenas na impressão -->
+  <div class="print-header" id="print-header-block">
+    <div>
+      <div class="print-title">✚ Check+ – Checklist</div>
+      <small id="print-meta"></small>
+    </div>
+    <div style="text-align:right;font-size:.8rem;" id="print-plate-km"></div>
+  </div>
+
+  <main class="op-main">
+
+    <div id="validation-alert" class="validation-alert" role="alert">
+      ⚠️ Preencha todos os campos obrigatórios e marque todos os itens antes de salvar.
+    </div>
+
+    <!-- Card: Dados Gerais -->
+    <div class="card" id="card-geral">
+      <div class="card-title">📋 Dados Gerais</div>
+
+      <!-- Toggle Saída / Chegada -->
+      <div class="op-toggle-wrap">
+        <label class="field-label">🔁 Operação *</label>
+        <div class="op-toggle">
+          <input type="radio" name="operacao" id="op-saida" value="saida" checked/>
+          <label for="op-saida"><span>🚀</span> Saída</label>
+          <input type="radio" name="operacao" id="op-chegada" value="chegada"/>
+          <label for="op-chegada"><span>🏁</span> Chegada</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">📅 Data e Hora</label>
+        <input type="datetime-local" id="campo-data" readonly/>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">🚘 Tipo de Veículo *</label>
+        <select id="campo-tipo">
+          <option value="">Selecione…</option>
+          <option value="carro">🚗 Carro</option>
+          <option value="moto">🏍️ Moto</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" id="label-local">📍 Local de Saída *</label>
+        <input type="text" id="campo-local" placeholder="Ex: Garagem Central"/>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">🔤 Placa *</label>
+        <input type="text" id="campo-placa" placeholder="Ex: ABC-1234" maxlength="10"
+               style="text-transform:uppercase;"/>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" id="label-km">📏 KM Inicial *</label>
+        <input type="number" id="campo-km" placeholder="Ex: 12500" min="0"/>
+      </div>
+    </div>
+
+    <!-- Card: Checklist condicional (aparece após seleção do tipo) -->
+    <div class="card" id="checklist-section" style="display:none;">
+      <div class="card-title" id="checklist-title">✅ Checklist</div>
+
+      <div class="form-group">
+        <label class="field-label">🏷️ Modelo *</label>
+        <input type="text" id="campo-modelo" placeholder="Ex: Honda Civic EXL 2022"/>
+      </div>
+
+      <div class="section-divider">Itens de Verificação</div>
+      <div id="checklist-items"></div>
+    </div>
+
+    <!-- Card: Fotos -->
+    <div class="card" id="card-fotos" style="display:none;">
+      <div class="card-title">📷 Fotos do Veículo</div>
+      <input type="file" id="input-camera"  accept="image/*" capture="environment" style="display:none;" multiple/>
+      <input type="file" id="input-galeria" accept="image/*" style="display:none;" multiple/>
+      <div class="photo-capture-row">
+        <button class="btn-photo" id="btn-tirar-foto" type="button">
+          <span class="btn-photo-icon">📸</span>Tirar Foto
+        </button>
+        <button class="btn-photo" id="btn-galeria" type="button">
+          <span class="btn-photo-icon">🖼️</span>Da Galeria
+        </button>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <p class="photo-count muted-text" id="photo-count"></p>
+    </div>
+
+    <!-- Ações principais -->
+    <div class="form-actions" id="form-actions" style="display:none;">
+      <button class="btn btn-primary" id="btn-save">💾 Salvar Checklist</button>
+      <button class="btn btn-secondary" id="btn-export">🖨️ Exportar PDF</button>
+      <button class="btn btn-secondary" id="btn-new">➕ Novo Checklist</button>
+    </div>
+
+    <!-- Histórico do operador -->
+    <div class="card">
+      <div class="card-title">🗂️ Meus Checklists</div>
+      <div id="op-historico-lista">
+        <p class="muted-text">Carregando…</p>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /#screen-operator -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TELA 4: ACESSO BLOQUEADO (assinatura expirada)
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-blocked" class="screen">
+  <div class="blocked-wrapper">
+    <div class="blocked-icon">🔒</div>
+    <h2 class="blocked-title">Acesso Suspenso</h2>
+    <p class="blocked-msg">
+      A assinatura da empresa expirou.<br/>
+      Entre em contato com o administrador para reativar o acesso.
+    </p>
+    <button class="btn btn-secondary btn-logout">Sair</button>
+  </div>
+</div>
+
+</body>
+</html>
