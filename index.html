@@ -273,6 +273,7 @@ input.error,select.error{border-color:var(--nok)!important;}
        4. Senhas protegidas com SHA-256 (SubtleCrypto nativa)
      ═══════════════════════════════════════════════════════════ -->
 <script>
+document.addEventListener('DOMContentLoaded', function() {
 /* ══════════════════════════════════════════════════════════════
    SEÇÃO 1 – CONSTANTES E ESTADO GLOBAL
 ══════════════════════════════════════════════════════════════ */
@@ -1224,6 +1225,7 @@ document.getElementById('btn-reset-device')?.addEventListener('click', () => {
    SEÇÃO 18 – ARRANQUE
 ══════════════════════════════════════════════════════════════ */
 init();
+}); // end DOMContentLoaded
 </script>
 </head>
 
