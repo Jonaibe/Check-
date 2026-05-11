@@ -538,7 +538,7 @@ document.getElementById('form-setup-admin').addEventListener('submit', async e =
 /** Tab: Vincular dispositivo (operador ou admin em outro dispositivo) */
 document.getElementById('form-setup-device').addEventListener('submit', async e => {
   e.preventDefault();
-  const codigo = document.getElementById('setup-device-code').value.trim().toUpperCase();
+  const codigo = document.getElementById('setup-device-code').value.trim().replace(/\s+/g, ''); // remove espaços/quebras
   if (!codigo || codigo.length < 10) {
     toast('Código inválido.', 'error'); return;
   }
