@@ -322,12 +322,39 @@ code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:.8re
   .rg{display:none!important;}
 }
 
+
+/* Recuperação de senha */
+#forgot-wrap{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+#forgot-wrap.show{display:block;}
+.reset-step{display:none;} .reset-step.active{display:block;}
+.code-inputs{display:flex;gap:8px;justify-content:center;margin:12px 0;}
+.code-inputs input{width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:800;font-family:'Syne',sans-serif;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--text);padding:0;}
+.code-inputs input:focus{border-color:var(--accent);outline:none;}
+
 @media(max-width:360px){
   .rg label{padding:4px 9px;font-size:.75rem;}
   .btn{padding:9px 13px;font-size:.84rem;}
   .plano-p{font-size:1.3rem;}
 }
 </style>
+<!-- EmailJS SDK – https://www.emailjs.com (gratuito: 200 e-mails/mês) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+/* ── CONFIGURAÇÃO EMAILJS ──────────────────────────────────────
+   1. Crie conta gratuita em https://www.emailjs.com
+   2. Crie um Email Service (Gmail, Outlook, etc.)
+   3. Crie um Email Template com as variáveis:
+        {{to_email}}  – destinatário
+        {{user_name}} – nome do usuário
+        {{reset_code}} – código de 6 dígitos
+        {{app_name}}  – nome do app
+   4. Substitua os valores abaixo:
+──────────────────────────────────────────────────────────────── */
+const EMAILJS_PUBLIC_KEY  = 'SUA_PUBLIC_KEY';   // Account → API Keys
+const EMAILJS_SERVICE_ID  = 'SUA_SERVICE_ID';   // Email Services → Service ID
+const EMAILJS_TEMPLATE_ID = 'SUA_TEMPLATE_ID';  // Email Templates → Template ID
+if (typeof emailjs !== 'undefined') emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+</script>
 </head>
 <body>
 
@@ -448,6 +475,43 @@ code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:.8re
         <div class="fg"><label class="fl">Senha</label><input type="password" id="l-senha" required autocomplete="current-password"/></div>
         <button type="submit" class="btn bp bw">Entrar</button>
       </form>
+      <div style="text-align:right;margin-top:-4px;margin-bottom:8px;">
+        <button type="button" class="btn" id="btn-forgot" style="background:none;border:none;color:var(--accent);font-size:.8rem;font-weight:600;cursor:pointer;padding:0;">Esqueci a senha →</button>
+      </div>
+
+      <!-- ── Recuperação de senha (abre abaixo do login) ── -->
+      <div id="forgot-wrap">
+        <!-- Passo 1: informar e-mail -->
+        <div class="reset-step active" id="rst-step1">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">Informe seu e-mail cadastrado. Enviaremos um código de 6 dígitos.</p>
+          <div class="fg"><label class="fl">E-mail cadastrado</label>
+            <input type="email" id="rst-email" placeholder="seu@email.com"/>
+          </div>
+          <button class="btn bp bw" id="btn-rst-enviar">📧 Enviar código</button>
+          <button class="btn bs bw" id="btn-rst-cancelar">Cancelar</button>
+        </div>
+        <!-- Passo 2: código + nova senha -->
+        <div class="reset-step" id="rst-step2">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">Digite o código de 6 dígitos enviado para <strong id="rst-email-display"></strong>:</p>
+          <div class="code-inputs">
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+            <input type="text" maxlength="1" class="ci-digit" inputmode="numeric"/>
+          </div>
+          <div class="fg"><label class="fl">Nova senha</label>
+            <input type="password" id="rst-nova-senha" placeholder="Mínimo 6 caracteres" minlength="6"/>
+          </div>
+          <div class="fg"><label class="fl">Confirmar nova senha</label>
+            <input type="password" id="rst-conf-senha" placeholder="Repita a senha"/>
+          </div>
+          <button class="btn bp bw" id="btn-rst-confirmar">✅ Redefinir senha</button>
+          <button class="btn bs bw" id="btn-rst-reenviar">🔄 Reenviar código</button>
+        </div>
+      </div>
+
       <div class="divt">ou</div>
       <button class="btn bs bw" id="btn-reconfig">⚙️ Reconfigurar dispositivo</button>
     </div>
@@ -1449,6 +1513,158 @@ window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredP
 window.addEventListener('appinstalled',()=>{ deferredPrompt=null; $('pwa-bar').style.display='none'; });
 window.instalarPWA=async()=>{ if(!deferredPrompt)return; deferredPrompt.prompt(); const{outcome}=await deferredPrompt.userChoice; deferredPrompt=null; if(outcome==='accepted')$('pwa-bar').style.display='none'; };
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('/Check-/sw.js').catch(()=>{}); }); }
+
+
+/* ══════════════════════════════════════════
+   RECUPERAÇÃO DE SENHA
+   Fluxo: e-mail → código 6 dígitos via EmailJS
+          → nova senha → hash SHA-256 → salva no Gist
+══════════════════════════════════════════ */
+
+let rstEmail   = null;   // e-mail digitado no passo 1
+let rstUserId  = null;   // id do usuário encontrado
+
+/* ── Abre / fecha painel de recuperação ── */
+$('btn-forgot').addEventListener('click', () => {
+  const wrap = $('forgot-wrap');
+  const abrindo = !wrap.classList.contains('show');
+  wrap.classList.toggle('show', abrindo);
+  if (abrindo) {
+    // Reseta para passo 1
+    irParaStep(1);
+    $('rst-email').value = $('l-email').value || '';
+  }
+});
+
+$('btn-rst-cancelar').addEventListener('click', () => {
+  $('forgot-wrap').classList.remove('show');
+  irParaStep(1);
+});
+
+function irParaStep(n) {
+  document.querySelectorAll('.reset-step').forEach(s => s.classList.remove('active'));
+  $(`rst-step${n}`)?.classList.add('active');
+  // Limpa inputs do código
+  if (n === 2) {
+    document.querySelectorAll('.ci-digit').forEach(i => i.value = '');
+    document.querySelector('.ci-digit')?.focus();
+  }
+}
+
+/* ── Navegação automática entre dígitos do código ── */
+document.querySelectorAll('.ci-digit').forEach((inp, idx, all) => {
+  inp.addEventListener('input', () => {
+    // Aceita apenas números
+    inp.value = inp.value.replace(/\D/g, '').slice(-1);
+    if (inp.value && idx < all.length - 1) all[idx + 1].focus();
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !inp.value && idx > 0) all[idx - 1].focus();
+  });
+  inp.addEventListener('paste', e => {
+    // Cola o código completo de uma vez
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    all.forEach((i, k) => { if (paste[k]) i.value = paste[k]; });
+    all[Math.min(paste.length, all.length - 1)].focus();
+  });
+});
+
+/* ── Passo 1: enviar código ── */
+$('btn-rst-enviar').addEventListener('click', async () => {
+  const email = $('rst-email').value.trim().toLowerCase();
+  if (!email) { toast('Informe o e-mail.', 'error'); return; }
+
+  spin(true);
+  try {
+    await loadData();
+    const user = G.data.usuarios.find(u => u.email === email);
+    if (!user) throw new Error('E-mail não encontrado. Verifique se está cadastrado.');
+
+    // Gera código de 6 dígitos e define expiração (15 minutos)
+    const codigo   = String(Math.floor(100000 + Math.random() * 900000));
+    const expira   = new Date(Date.now() + 15 * 60000).toISOString();
+
+    // Salva no Gist (campo temporário no usuário)
+    const idx = G.data.usuarios.findIndex(u => u.id === user.id);
+    G.data.usuarios[idx].resetCode    = codigo;
+    G.data.usuarios[idx].resetExpira  = expira;
+    await saveData();
+
+    // Envia e-mail via EmailJS
+    if (EMAILJS_PUBLIC_KEY === 'SUA_PUBLIC_KEY') {
+      // Modo de desenvolvimento: mostra o código no toast
+      toast(`[DEV] Código: ${codigo} (EmailJS não configurado)`, 'info');
+      console.log('Código de reset:', codigo);
+    } else {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:   email,
+        user_name:  user.nome,
+        reset_code: codigo,
+        app_name:   'Check+',
+      });
+      toast('Código enviado! Verifique seu e-mail.', 'success');
+    }
+
+    rstEmail  = email;
+    rstUserId = user.id;
+    $('rst-email-display').textContent = email;
+    irParaStep(2);
+
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+  spin(false);
+});
+
+/* ── Reenviar código ── */
+$('btn-rst-reenviar').addEventListener('click', () => {
+  irParaStep(1);
+  $('rst-email').value = rstEmail || '';
+  toast('Solicite um novo código.', 'info');
+});
+
+/* ── Passo 2: confirmar código e nova senha ── */
+$('btn-rst-confirmar').addEventListener('click', async () => {
+  const digitado = Array.from(document.querySelectorAll('.ci-digit')).map(i => i.value).join('');
+  const novaSenha = $('rst-nova-senha').value;
+  const confSenha = $('rst-conf-senha').value;
+
+  if (digitado.length !== 6) { toast('Digite o código completo.', 'error'); return; }
+  if (!novaSenha || novaSenha.length < 6) { toast('A senha deve ter ao menos 6 caracteres.', 'error'); return; }
+  if (novaSenha !== confSenha) { toast('As senhas não coincidem.', 'error'); return; }
+
+  spin(true);
+  try {
+    await loadData();
+    const idx  = G.data.usuarios.findIndex(u => u.id === rstUserId);
+    const user = G.data.usuarios[idx];
+
+    if (!user)                                    throw new Error('Usuário não encontrado.');
+    if (user.resetCode !== digitado)              throw new Error('Código incorreto. Tente novamente.');
+    if (new Date(user.resetExpira) < new Date())  throw new Error('Código expirado. Solicite um novo.');
+
+    // Atualiza senha e remove código temporário
+    G.data.usuarios[idx].hash = await sha256(novaSenha);
+    delete G.data.usuarios[idx].resetCode;
+    delete G.data.usuarios[idx].resetExpira;
+    await saveData();
+
+    toast('✅ Senha redefinida! Faça login.', 'success');
+    $('forgot-wrap').classList.remove('show');
+    irParaStep(1);
+    // Pré-preenche o e-mail no login
+    $('l-email').value  = rstEmail || '';
+    $('l-senha').value  = '';
+    rstEmail   = null;
+    rstUserId  = null;
+
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+  spin(false);
+});
+
 
 /* ── ARRANQUE ── */
 init();
